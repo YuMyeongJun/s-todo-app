@@ -1,12 +1,12 @@
-import './App.css'
+import { TodoProvider } from './contexts/TodoContext';
+import TodoComponent from './components/todo/TodoComponent';
 
 function App() {
-
   return (
-    <div>
-      이곳에 To-Do App을 작성해주세요.
-    </div>
-  )
+    <TodoProvider>
+      <TodoComponent />
+    </TodoProvider>
+  );
 }
 
-export default App
+export default App;
