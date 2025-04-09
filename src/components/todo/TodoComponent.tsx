@@ -22,6 +22,7 @@ export default function TodoComponent() {
         <TodoList />
         <div style={{ marginTop: 16 }}>
           <Button
+            aria-label="delete-selected-button"
             disabled={selectedIds.length === 0}
             danger
             onClick={() => deleteTodos(selectedIds)}
