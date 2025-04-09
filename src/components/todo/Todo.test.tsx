@@ -121,6 +121,40 @@ describe("TodoComponent", () => {
     });
   });
 
+  /** 테스트 통과 안되지만 다른 컴퓨터에서 하기위한 커밋 */
+  // it("개별 할일을 수정할 수 있어야 합니다", async () => {
+  //   renderComponent();
+
+  //   // 할일 목록이 로드될 때까지 대기
+  //   await waitFor(() => {
+  //     expect(screen.getByText("할일 1")).toBeInTheDocument();
+  //   });
+
+  //   // 수정 버튼 클릭
+  //   const editButton = screen.getAllByRole("button", { name: "edit" })[0];
+  //   fireEvent.click(editButton);
+
+  //   // 수정된 텍스트 입력
+  //   const inputs = screen.getAllByDisplayValue("할일 1");
+  //   const editInput = inputs.find(input => input.getAttribute("type") === "text");
+  //   expect(editInput).toBeTruthy();
+  //   fireEvent.change(editInput!, { target: { value: "수정된 할일" } });
+
+  //   // 확인 버튼 클릭
+  //   const confirmButton = screen.getAllByRole("button", { name: "check" })[0];
+  //   fireEvent.click(confirmButton);
+
+  //   // API 호출 확인
+  //   await waitFor(() => {
+  //     const updateCall = mockFetch.mock.calls.find(
+  //       (call) =>
+  //         call[0] === "/api/todos/1" &&
+  //         call[1]?.method === "PUT" &&
+  //         JSON.parse(call[1].body).text === "수정된 할일"
+  //     );
+  //     expect(updateCall).toBeTruthy();
+  //   });
+  // });
 
   it("개별 할일을 삭제할 수 있어야 합니다", async () => {
     renderComponent();
@@ -172,6 +206,69 @@ describe("TodoComponent", () => {
     });
   });
 
+  /** 테스트 통과 안되지만 다른 컴퓨터에서 하기위한 커밋 */
+  // it("삭제 버튼 클릭 시 선택된 항목들이 삭제되어야 합니다", async () => {
+  //   renderComponent();
+
+  //   // 할일 목록이 로드될 때까지 대기
+  //   await waitFor(() => {
+  //     expect(screen.getByText("할일 1")).toBeInTheDocument();
+  //   });
+
+  //   // 체크박스 선택
+  //   const checkboxes = screen.getAllByRole("checkbox").slice(1, 3); // 첫 번째는 전체 선택
+  //   checkboxes.forEach((checkbox) => {
+  //     fireEvent.click(checkbox);
+  //   });
+
+  //   // 선택 삭제 버튼 클릭
+  //   const deleteButton = screen.getByRole("button", { name: /선택된 항목 삭제/ });
+  //   fireEvent.click(deleteButton);
+
+  //   // API 호출 확인
+  //   await waitFor(() => {
+  //     const calls = mockFetch.mock.calls;
+  //     const deleteCall1 = calls.find(
+  //       (call) =>
+  //         call[0] === "/api/todos/1" &&
+  //         call[1]?.method === "DELETE"
+  //     );
+  //     const deleteCall2 = calls.find(
+  //       (call) =>
+  //         call[0] === "/api/todos/2" &&
+  //         call[1]?.method === "DELETE"
+  //     );
+  //     expect(deleteCall1).toBeTruthy();
+  //     expect(deleteCall2).toBeTruthy();
+  //   });
+  // });
+
+  /** 테스트 통과 안되지만 다른 컴퓨터에서 하기위한 커밋 */
+  // it("페이지를 변경할 수 있어야 합니다", async () => {
+  //   renderComponent();
+
+  //   // 할일 목록이 로드될 때까지 대기
+  //   await waitFor(() => {
+  //     expect(screen.getByText("할일 1")).toBeInTheDocument();
+  //   });
+
+  //   // Select 클릭
+  //   const select = screen.getByRole("combobox");
+  //   fireEvent.mouseDown(select);
+
+  //   // 옵션 선택
+  //   const option = await screen.findByText("5개씩");
+  //   fireEvent.click(option);
+
+  //   // API 호출 확인
+  //   await waitFor(() => {
+  //     const calls = mockFetch.mock.calls;
+  //     const pageCall = calls.find(
+  //       (call) => call[0].includes("pageSize=5") && call[0].includes("page=1")
+  //     );
+  //     expect(pageCall).toBeTruthy();
+  //   });
+  // });
 
   it("무한 스크롤 모드로 전환하고 스크롤할 수 있어야 합니다", async () => {
     renderComponent();
