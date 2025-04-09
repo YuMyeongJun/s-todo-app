@@ -56,6 +56,7 @@ export default function TodoHeader() {
                             { value: 20, label: '20개씩' },
                         ]}
                         style={{ width: 100 }}
+                        aria-label="페이지 크기 선택"
                     />
                 )}
             </Space>

@@ -1,19 +1,220 @@
-import { describe, expect, test } from "vitest";
-import { render, screen } from "@testing-library/react";
+/// <reference types="vitest" />
+/// <reference types="@testing-library/jest-dom" />
+
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import TodoComponent from "./TodoComponent";
-import { TodoProvider } from "../../contexts";
+import { TodoProvider } from "../../contexts/TodoContext";
+import { ToDo } from "../../types/api";
+import dayjs from "dayjs";
+import { Select } from "antd";
+import type { SelectProps } from "antd";
 
-function App() {
-  return (
-    <TodoProvider>
-      <TodoComponent />
-    </TodoProvider>
-  );
-}
+// Mock IntersectionObserver
+const mockIntersectionObserver = vi.fn();
+mockIntersectionObserver.mockImplementation(() => ({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null,
+}));
 
-describe("Todo 컴포넌트 로드 테스트", () => {
-  test("Todo 컴포넌트가 로드되어야한다.", async () => {
-    render(<App />);
-    // expect(await screen.findByText("할일 목록")).toBeInTheDocument();
+window.IntersectionObserver = mockIntersectionObserver;
+
+// Mock fetch
+const mockFetch = vi.fn();
+(window as any).fetch = mockFetch;
+
+// 테스트용 Select 컴포넌트
+const TestSelect = ({ value, onChange }: { value: number, onChange: SelectProps['onChange'] }) => (
+  <Select
+    value={value}
+    onChange={onChange}
+    options={[
+      { value: 5, label: '5개씩' },
+      { value: 10, label: '10개씩' },
+      { value: 20, label: '20개씩' },
+    ]}
+  />
+);
+
+describe("TodoComponent", () => {
+  beforeEach(() => {
+    // Reset mocks
+    mockFetch.mockReset();
+
+    // Mock successful API response
+    mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+      if (url === "/api/todos" && !options) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            data: Array.from({ length: 15 }, (_, i) => ({
+              id: i + 1,
+              text: `할일 ${i + 1}`,
+              done: false,
+              deadline: Date.now() + 86400000
+            }))
+          })
+        });
+      }
+      return Promise.resolve({ ok: true });
+    });
+  });
+
+  const renderComponent = () => {
+    return render(
+      <TodoProvider>
+        <TodoComponent />
+      </TodoProvider>
+    );
+  };
+
+  it("컴포넌트가 정상적으로 렌더링되어야 합니다", async () => {
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByText(/선택된 항목 삭제/)).toBeInTheDocument();
+    });
+  });
+
+  it("검색어 입력 시 할일 목록이 필터링되어야 합니다", async () => {
+    renderComponent();
+
+    // 할일 목록이 로드될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByText("할일 1")).toBeInTheDocument();
+    });
+
+    // 검색어 입력
+    await act(async () => {
+      const searchInput = screen.getByPlaceholderText("검색");
+      fireEvent.change(searchInput, { target: { value: "할일 1" } });
+    });
+
+    // 검색 결과 확인
+    expect(screen.getByText("할일 1")).toBeInTheDocument();
+    expect(screen.queryByText("할일 2")).not.toBeInTheDocument();
+  });
+
+  it("할일 완료 상태를 변경할 수 있어야 합니다", async () => {
+    renderComponent();
+
+    // 할일 목록이 로드될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByText("할일 1")).toBeInTheDocument();
+    });
+
+    // 첫 번째 할일의 완료 상태 변경
+    await act(async () => {
+      const statusSwitch = screen.getAllByRole("switch")[0];
+      fireEvent.click(statusSwitch);
+    });
+
+    // API 호출 확인
+    await waitFor(() => {
+      const calls = mockFetch.mock.calls;
+      const updateCall = calls.find(call =>
+        call[0] === "/api/todos/1" &&
+        call[1]?.method === "PUT" &&
+        JSON.parse(call[1].body).done === true
+      );
+      expect(updateCall).toBeTruthy();
+    });
+  });
+
+
+  it("개별 할일을 삭제할 수 있어야 합니다", async () => {
+    renderComponent();
+
+    // 할일 목록이 로드될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByText("할일 1")).toBeInTheDocument();
+    });
+
+    // 삭제 버튼 클릭
+    const deleteButton = screen.getAllByRole("button", { name: "delete" })[0];
+    fireEvent.click(deleteButton);
+
+    // API 호출 확인
+    await waitFor(() => {
+      const deleteCall = mockFetch.mock.calls.find(
+        (call) =>
+          call[0] === "/api/todos/1" &&
+          call[1]?.method === "DELETE"
+      );
+      expect(deleteCall).toBeTruthy();
+    });
+  });
+
+  it("선택된 항목이 없을 때 삭제 버튼이 비활성화되어야 합니다", async () => {
+    renderComponent();
+    await waitFor(() => {
+      const deleteButton = screen.getByRole("button", { name: /선택된 항목 삭제/ });
+      expect(deleteButton).toBeDisabled();
+    });
+  });
+
+  it("선택된 항목이 있을 때 삭제 버튼이 활성화되어야 합니다", async () => {
+    renderComponent();
+
+    // 할일 목록이 로드될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByText("할일 1")).toBeInTheDocument();
+    });
+
+    // 전체 선택 체크박스 클릭
+    const allCheckbox = screen.getByRole("checkbox", { name: "전체 선택" });
+    fireEvent.click(allCheckbox);
+
+    // 삭제 버튼이 활성화되었는지 확인
+    await waitFor(() => {
+      const deleteButton = screen.getByRole("button", { name: /선택된 항목 삭제/ });
+      expect(deleteButton).not.toBeDisabled();
+    });
+  });
+
+
+  it("무한 스크롤 모드로 전환하고 스크롤할 수 있어야 합니다", async () => {
+    renderComponent();
+
+    // 할일 목록이 로드될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getByText("할일 1")).toBeInTheDocument();
+    });
+
+    // 무한 스크롤 모드로 변경
+    const infiniteScrollButton = screen.getByRole("radio", { name: "무한 스크롤" });
+    fireEvent.click(infiniteScrollButton);
+
+    // 스크롤 이벤트 발생
+    const scrollContainer = document.getElementById("scrollableDiv");
+    fireEvent.scroll(scrollContainer!, { target: { scrollTop: 1000 } });
+
+    // API 호출 확인
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith("/api/todos");
+    });
+  });
+
+  it("할일을 추가할 수 있어야 합니다", async () => {
+    renderComponent();
+
+    // 새로운 할일 입력
+    const input = screen.getByPlaceholderText("새로운 할일");
+    fireEvent.change(input, { target: { value: "새로운 할일" } });
+
+    // 추가 버튼 클릭
+    const addButton = screen.getByRole("button", { name: "추가" });
+    fireEvent.click(addButton);
+
+    // API 호출 확인
+    await waitFor(() => {
+      const calls = mockFetch.mock.calls;
+      const createCall = calls.find(call =>
+        call[0] === "/api/todos" &&
+        call[1]?.method === "POST" &&
+        JSON.parse(call[1].body).text === "새로운 할일"
+      );
+      expect(createCall).toBeTruthy();
+    });
   });
 });

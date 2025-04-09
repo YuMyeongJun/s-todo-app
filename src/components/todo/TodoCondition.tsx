@@ -25,6 +25,7 @@ export default function TodoCondition() {
                 style={{ width: 300 }}
                 value={deadline}
                 onChange={(date) => date && setDeadline(date)}
+                aria-label="마감일"
             />
             <Button type="primary" onClick={handleAddTodo}>
                 추가
